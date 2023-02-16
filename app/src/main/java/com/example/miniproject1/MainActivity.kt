@@ -23,12 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.firstttsproject.R
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.launch
 import java.util.*
 
 
@@ -48,9 +43,13 @@ class MainActivity : AppCompatActivity() {
     @Composable
     fun Main() {
         var text by rememberSaveable { mutableStateOf("") }
-        val seoul = LatLng(37.532600, 127.024612)
-        val cameraPositionState = rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom(seoul, 10f)
+        var state by remember { mutableStateOf(false) }
+
+        if (state) {
+            LaunchedEffect(true) {
+                text = callSpeechRecognizer()
+                Log.e("Main", text)
+            }
         }
 
         Column(
@@ -61,32 +60,8 @@ class MainActivity : AppCompatActivity() {
         ) {
             Button(
                 onClick = {
-                    val speechRecognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-                    speechRecognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-                    speechRecognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
-
-                    speechRecognizer?.startListening(speechRecognizerIntent)
-
-                    speechRecognizer?.setRecognitionListener(object : RecognitionListener {
-                        override fun onReadyForSpeech(bundle: Bundle) {}
-                        override fun onBeginningOfSpeech() {
-                        }
-
-                        override fun onRmsChanged(v: Float) {}
-                        override fun onBufferReceived(bytes: ByteArray) {}
-                        override fun onEndOfSpeech() {}
-                        override fun onError(i: Int) {
-                            Log.e("onError", i.toString())
-                        }
-
-                        override fun onResults(bundle: Bundle) {
-                            val data = bundle.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                            text = data!![0]
-                        }
-
-                        override fun onPartialResults(bundle: Bundle) {}
-                        override fun onEvent(i: Int, bundle: Bundle) {}
-                    })
+                    state = !state
+                    Log.e("Main", state.toString())
                 },
                 Modifier
                     .fillMaxWidth()
@@ -110,17 +85,6 @@ class MainActivity : AppCompatActivity() {
                 )
             )
             Spacer(modifier = Modifier.height(10.dp))
-            GoogleMap(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                cameraPositionState = cameraPositionState
-            ) {
-                Marker(
-                    state = MarkerState(position = seoul),
-                    title = "Singapore",
-                    snippet = "Marker in Singapore"
-                )
-            }
         }
     }
 
@@ -138,5 +102,38 @@ class MainActivity : AppCompatActivity() {
                 1
             )
         }
+    }
+
+    private fun callSpeechRecognizer() : String {
+        var text = ""
+        val speechRecognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        speechRecognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        speechRecognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+
+        speechRecognizer?.startListening(speechRecognizerIntent)
+
+        speechRecognizer?.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(bundle: Bundle) {}
+            override fun onBeginningOfSpeech() {
+            }
+
+            override fun onRmsChanged(v: Float) {}
+            override fun onBufferReceived(bytes: ByteArray) {}
+            override fun onEndOfSpeech() {}
+            override fun onError(i: Int) {
+                Log.e("onError", i.toString())
+            }
+
+            override fun onResults(bundle: Bundle) {
+                val data = bundle.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                text = data!![0]
+                Log.e("onResults", text)
+            }
+
+            override fun onPartialResults(bundle: Bundle) {}
+            override fun onEvent(i: Int, bundle: Bundle) {}
+        })
+
+        return text
     }
 }
